@@ -24,6 +24,8 @@ open class HttpRouter {
     }
 
     private var rootNode = Node()
+    private var mainRoute: String = ""
+    private var mainHandler: ((HttpRequest) -> HttpResponse)?
 
     /// The Queue to handle the thread safe access to the routes
     private let queue = DispatchQueue(label: "swifter.httpserverio.httprouter")
@@ -48,35 +50,16 @@ open class HttpRouter {
     }
 
     public func register(_ method: String?, path: String, handler: ((HttpRequest) -> HttpResponse)?) {
-        var pathSegments = stripQuery(path).split("/")
-        if let method = method {
-            pathSegments.insert(method, at: 0)
-        } else {
-            pathSegments.insert("*", at: 0)
-        }
-        var pathSegmentsGenerator = pathSegments.makeIterator()
-        inflate(&rootNode, generator: &pathSegmentsGenerator).handler = handler
+        self.mainRoute = path
+        self.mainHandler = handler
     }
 
     public func route(_ method: String?, path: String) -> ([String: String], (HttpRequest) -> HttpResponse)? {
 
         return queue.sync {
-            if let method = method {
-                let pathSegments = (method + "/" + stripQuery(path)).split("/")
-                var pathSegmentsGenerator = pathSegments.makeIterator()
-                var params = [String: String]()
-                if let handler = findHandler(&rootNode, params: &params, generator: &pathSegmentsGenerator) {
-                    return (params, handler)
-                }
+            if let handler = self.mainHandler {
+                return ([:], handler)
             }
-
-            let pathSegments = ("*/" + stripQuery(path)).split("/")
-            var pathSegmentsGenerator = pathSegments.makeIterator()
-            var params = [String: String]()
-            if let handler = findHandler(&rootNode, params: &params, generator: &pathSegmentsGenerator) {
-                return (params, handler)
-            }
-
             return nil
         }
     }
@@ -100,12 +83,7 @@ open class HttpRouter {
 
     private func findHandler(_ node: inout Node, params: inout [String: String], generator: inout IndexingIterator<[String]>) -> ((HttpRequest) -> HttpResponse)? {
 
-        var matchedRoutes = [Node]()
-        let pattern = generator.map { $0 }
-        let numberOfElements = pattern.count
-
-        findHandler(&node, params: &params, pattern: pattern, matchedNodes: &matchedRoutes, index: 0, count: numberOfElements)
-        return matchedRoutes.first?.handler
+        return node.handler
     }
 
     // swiftlint:disable function_parameter_count
