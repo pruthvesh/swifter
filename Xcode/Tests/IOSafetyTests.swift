@@ -7,47 +7,49 @@
 //
 
 import XCTest
-#if os(Linux)
-import FoundationNetworking
-#endif
+
 @testable import Swifter
 
+#if os(Linux)
+  import FoundationNetworking
+#endif
+
 class IOSafetyTests: XCTestCase {
-    var server: HttpServer!
-    var urlSession: URLSession!
+  var server: HttpServer!
+  var urlSession: URLSession!
 
-    override func setUp() {
-        super.setUp()
-        server = HttpServer.pingServer()
-        urlSession = URLSession(configuration: .default)
+  override func setUp() {
+    super.setUp()
+    server = HttpServer.pingServer()
+    urlSession = URLSession(configuration: .default)
+  }
+
+  override func tearDown() {
+    if server.operating {
+      server.stop()
     }
 
-    override func tearDown() {
-        if server.operating {
-            server.stop()
+    urlSession = nil
+    server = nil
+
+    super.tearDown()
+  }
+
+  func testStopWithActiveConnections() {
+    (0...100).forEach { cpt in
+      server = HttpServer.pingServer()
+      do {
+        try server.start()
+        XCTAssertFalse(urlSession.retryPing())
+        (0...100).forEach { _ in
+          DispatchQueue.global(qos: DispatchQoS.default.qosClass).sync {
+            urlSession.pingTask { _, _, _ in }.resume()
+          }
         }
-
-        urlSession = nil
-        server = nil
-
-        super.tearDown()
+        server.stop()
+      } catch let error {
+        XCTFail("\(cpt): \(error)")
+      }
     }
-
-    func testStopWithActiveConnections() {
-        (0...100).forEach { cpt in
-            server = HttpServer.pingServer()
-            do {
-                try server.start()
-                XCTAssertFalse(urlSession.retryPing())
-                (0...100).forEach { _ in
-                    DispatchQueue.global(qos: DispatchQoS.default.qosClass).sync {
-                        urlSession.pingTask { _, _, _ in }.resume()
-                    }
-                }
-                server.stop()
-            } catch let error {
-                XCTFail("\(cpt): \(error)")
-            }
-        }
-    }
+  }
 }

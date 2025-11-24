@@ -7,32 +7,32 @@ let package = Package(
 
   products: [
     .library(name: "Swifter", targets: ["Swifter"]),
-    .executable(name: "SwifterExample", targets: ["SwifterExample"])
+    .executable(name: "SwifterExample", targets: ["SwifterExample"]),
   ],
 
   dependencies: [],
 
   targets: [
     .target(
-      name: "Swifter", 
-      dependencies: [], 
+      name: "Swifter",
+      dependencies: [],
       path: "Xcode/Sources"
-      ),
+    ),
 
     .target(
       name: "SwifterExample",
       dependencies: [
         "Swifter"
-      ], 
+      ],
       path: "SwifterExample"
     ),
 
     .testTarget(
-      name: "SwifterTests", 
+      name: "SwifterTests",
       dependencies: [
         "Swifter"
-      ], 
+      ],
       path: "Xcode/Tests"
-    )
+    ),
   ]
 )
