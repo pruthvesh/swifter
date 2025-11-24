@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swifter}",
+            "name": "Debug SwifterExample",
+            "target": "SwifterExample",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug SwifterExample"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swifter}",
+            "name": "Release SwifterExample",
+            "target": "SwifterExample",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release SwifterExample"
+        }
+    ]
+}
