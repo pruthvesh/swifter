@@ -1,5 +1,5 @@
-import Swifter
 import Dispatch
+import Swifter
 
 let server = HttpServer()
 server["/"] = scopes {

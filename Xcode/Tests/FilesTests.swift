@@ -7,94 +7,96 @@
 //
 
 import XCTest
-#if os(Linux)
-import FoundationNetworking
-#endif
+
 @testable import Swifter
 
+#if os(Linux)
+  import FoundationNetworking
+#endif
+
 class FilesTests: XCTestCase {
-    let temporaryDirectoryURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-    let temporaryFileName = UUID().uuidString + ".png"
+  let temporaryDirectoryURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+  let temporaryFileName = UUID().uuidString + ".png"
 
-    override func setUp() {
-        super.setUp()
+  override func setUp() {
+    super.setUp()
 
-        let temporaryFileURL = temporaryDirectoryURL.appendingPathComponent(temporaryFileName)
-        let data = "This is a file"
-        do {
-            try data.write(to: temporaryFileURL, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            XCTFail("Failed to create temporary file")
-        }
+    let temporaryFileURL = temporaryDirectoryURL.appendingPathComponent(temporaryFileName)
+    let data = "This is a file"
+    do {
+      try data.write(to: temporaryFileURL, atomically: true, encoding: String.Encoding.utf8)
+    } catch {
+      XCTFail("Failed to create temporary file")
+    }
+  }
+
+  override func tearDown() {
+    let temporaryFileURL = temporaryDirectoryURL.appendingPathComponent(temporaryFileName)
+    do {
+      try FileManager.default.removeItem(at: temporaryFileURL)
+    } catch {
+      // no worries
     }
 
-    override func tearDown() {
-        let temporaryFileURL = temporaryDirectoryURL.appendingPathComponent(temporaryFileName)
-        do {
-            try FileManager.default.removeItem(at: temporaryFileURL)
-        } catch {
-            // no worries
-        }
-        
-        super.tearDown()
-    }
-    
-    func testShareFile() {
-        let request = HttpRequest()
-        let closure = shareFile(temporaryDirectoryURL.appendingPathComponent(temporaryFileName).path)
-        let result = closure(request)
-        let headers = result.headers()
+    super.tearDown()
+  }
 
-        XCTAssert(result.statusCode == 200)
-        XCTAssert(headers["Content-Type"] == "image/png")
-        XCTAssert(headers["Content-Length"] == "14")
-    }
-    
-    func testShareFileNotFound() {
-        let request = HttpRequest()
-        let closure = shareFile(temporaryDirectoryURL.appendingPathComponent("does_not_exist").path)
-        let result = closure(request)
+  func testShareFile() {
+    let request = HttpRequest()
+    let closure = shareFile(temporaryDirectoryURL.appendingPathComponent(temporaryFileName).path)
+    let result = closure(request)
+    let headers = result.headers()
 
-        XCTAssert(result == .notFound)
-    }
+    XCTAssert(result.statusCode == 200)
+    XCTAssert(headers["Content-Type"] == "image/png")
+    XCTAssert(headers["Content-Length"] == "14")
+  }
 
-    func testShareFilesFromDirectory() {
-        let request = HttpRequest()
-        request.params = ["path": temporaryFileName]
-        let closure = shareFilesFromDirectory(temporaryDirectoryURL.path)
-        let result = closure(request)
-        let headers = result.headers()
+  func testShareFileNotFound() {
+    let request = HttpRequest()
+    let closure = shareFile(temporaryDirectoryURL.appendingPathComponent("does_not_exist").path)
+    let result = closure(request)
 
-        XCTAssert(result.statusCode == 200)
-        XCTAssert(headers["Content-Type"] == "image/png")
-        XCTAssert(headers["Content-Length"] == "14")
-    }
-    
-    func testShareFilesFromDirectoryFileNotFound() {
-        let request = HttpRequest()
-        request.params = ["path": "does_not_exist.wav"]
+    XCTAssert(result == .notFound)
+  }
 
-        let closure = shareFilesFromDirectory(temporaryDirectoryURL.path)
-        let result = closure(request)
+  func testShareFilesFromDirectory() {
+    let request = HttpRequest()
+    request.params = ["path": temporaryFileName]
+    let closure = shareFilesFromDirectory(temporaryDirectoryURL.path)
+    let result = closure(request)
+    let headers = result.headers()
 
-        XCTAssert(result == .notFound)
-    }
-    
-    func testDirectoryBrowser() {
-        let request = HttpRequest()
-        request.params = ["path": ""]
-        let closure = directoryBrowser(temporaryDirectoryURL.path)
-        let result = closure(request)
+    XCTAssert(result.statusCode == 200)
+    XCTAssert(headers["Content-Type"] == "image/png")
+    XCTAssert(headers["Content-Length"] == "14")
+  }
 
-        XCTAssert(result.statusCode == 200)
-    }
-    
-    func testDirectoryBrowserNotFound() {
-        let request = HttpRequest()
-        request.params = ["path": "does/not/exist"]
-        let closure = directoryBrowser(temporaryDirectoryURL.path)
-        let result = closure(request)
+  func testShareFilesFromDirectoryFileNotFound() {
+    let request = HttpRequest()
+    request.params = ["path": "does_not_exist.wav"]
 
-        XCTAssert(result == .notFound)
-    }
+    let closure = shareFilesFromDirectory(temporaryDirectoryURL.path)
+    let result = closure(request)
+
+    XCTAssert(result == .notFound)
+  }
+
+  func testDirectoryBrowser() {
+    let request = HttpRequest()
+    request.params = ["path": ""]
+    let closure = directoryBrowser(temporaryDirectoryURL.path)
+    let result = closure(request)
+
+    XCTAssert(result.statusCode == 200)
+  }
+
+  func testDirectoryBrowserNotFound() {
+    let request = HttpRequest()
+    request.params = ["path": "does/not/exist"]
+    let closure = directoryBrowser(temporaryDirectoryURL.path)
+    let result = closure(request)
+
+    XCTAssert(result == .notFound)
+  }
 }
